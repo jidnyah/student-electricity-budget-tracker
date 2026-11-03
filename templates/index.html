@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>EcoGrid – Campus electricity billing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --page: #f4f6f8;
+            --surface: #ffffff;
+            --ink: #14202b;
+            --ink-soft: #4a5866;
+            --ink-faint: #5f6b78;
+            --line: #d8dee5;
+            --line-soft: #e8ecf0;
+            --control-border: #8a96a3;
+            --accent: #0b5d4b;
+            --accent-strong: #084a3b;
+            --accent-tint: #e6f2ee;
+            --over: #a8381f;
+            --over-tint: #fbece8;
+            --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            margin: 0;
+            background: var(--page);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 0.9375rem;
+            line-height: 1.5;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 2.5rem;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* Page header */
+        .page-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.25;
+            letter-spacing: -0.01em;
+        }
+
+        .page-header p {
+            margin: 0.25rem 0 0;
+            color: var(--ink-soft);
+        }
+
+        /* Feedback notice (from ?status= and ?message=) */
+        .notice {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 0.85rem 1.1rem;
+            border: 1px solid var(--line);
+            border-left-width: 4px;
+            border-radius: 6px;
+        }
+
+        .notice p {
+            margin: 0;
+        }
+
+        .notice a {
+            flex: none;
+            color: inherit;
+            font-size: 0.875rem;
+        }
+
+        .notice-success {
+            background: var(--accent-tint);
+            border-color: var(--accent);
+        }
+
+        .notice-error {
+            background: var(--over-tint);
+            border-color: var(--over);
+        }
+
+        /* Campus summary */
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1px;
+            margin: 0 0 1.5rem;
+            background: var(--line);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .summary > div {
+            padding: 0.9rem 1.1rem;
+            background: var(--surface);
+        }
+
+        .summary > div:last-child {
+            grid-column: 1 / -1;
+        }
+
+        .summary dt {
+            color: var(--ink-faint);
+            font-size: 0.8125rem;
+        }
+
+        .summary dd {
+            margin: 0.15rem 0 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .summary .unit {
+            color: var(--ink-soft);
+            font-size: 0.875rem;
+            font-weight: 400;
+        }
+
+        /* Layout */
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .side {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+        }
+
+        .panel-head {
+            padding: 1.1rem 1.25rem 0.9rem;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .panel-head h2 {
+            margin: 0;
+            font-size: 1.0625rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .panel-head p {
+            margin: 0.2rem 0 0;
+            color: var(--ink-soft);
+            font-size: 0.875rem;
+        }
+
+        .panel-body {
+            padding: 1.25rem;
+        }
+
+        /* Forms */
+        .field + .field {
+            margin-top: 1rem;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 0.35rem;
+            font-weight: 500;
+        }
+
+        .field select,
+        .field input {
+            width: 100%;
+            height: 2.5rem;
+            padding: 0 0.75rem;
+            color: var(--ink);
+            font: inherit;
+            background: var(--surface);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+        }
+
+        .field select:focus-visible,
+        .field input:focus-visible {
+            outline-offset: 0;
+            border-color: var(--accent);
+        }
+
+        .hint {
+            margin: 0.4rem 0 0;
+            color: var(--ink-faint);
+            font-size: 0.8125rem;
+        }
+
+        .button {
+            width: 100%;
+            height: 2.625rem;
+            margin-top: 1.25rem;
+            color: #ffffff;
+            font: inherit;
+            font-weight: 600;
+            background: var(--accent);
+            border: 0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background: var(--accent-strong);
+        }
+
+        /* Billing terms */
+        .terms {
+            padding: 1.1rem 1.25rem 1.25rem;
+            border-top: 1px solid var(--line-soft);
+        }
+
+        .terms h3 {
+            margin: 0 0 0.4rem;
+            font-size: 0.9375rem;
+            font-weight: 600;
+        }
+
+        .terms dl {
+            margin: 0;
+        }
+
+        .terms dl > div {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.4rem 0;
+        }
+
+        .terms dt {
+            color: var(--ink-soft);
+        }
+
+        .terms dd {
+            margin: 0;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Leaderboard table */
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 46rem;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        th:first-child,
+        td:first-child {
+            padding-left: 1.25rem;
+        }
+
+        th:last-child,
+        td:last-child {
+            padding-right: 1.25rem;
+        }
+
+        thead th {
+            color: var(--ink-faint);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            white-space: nowrap;
+            border-bottom-color: var(--line);
+        }
+
+        tbody tr:last-child > * {
+            border-bottom: 0;
+        }
+
+        tbody th {
+            font-weight: 400;
+        }
+
+        .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .rank {
+            width: 3.5rem;
+            color: var(--ink-soft);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .name {
+            display: block;
+            font-weight: 500;
+        }
+
+        .room {
+            display: block;
+            color: var(--ink-faint);
+            font-size: 0.8125rem;
+        }
+
+        .tier {
+            color: var(--ink-soft);
+            white-space: nowrap;
+        }
+
+        .usage {
+            min-width: 14rem;
+        }
+
+        .usage-figures {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.75rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .usage-delta {
+            color: var(--ink-soft);
+            font-size: 0.8125rem;
+        }
+
+        .usage-delta.under {
+            color: var(--accent);
+        }
+
+        .usage-delta.over {
+            color: var(--over);
+        }
+
+        /* Bars run from 0 to 150% of the baseline; the mark sits at 100%. */
+        .bar {
+            position: relative;
+            height: 6px;
+            margin-top: 0.45rem;
+            background: var(--line-soft);
+            border-radius: 3px;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        .bar-fill.over {
+            background: var(--over);
+        }
+
+        .bar-mark {
+            position: absolute;
+            top: -3px;
+            bottom: -3px;
+            left: 66.667%;
+            width: 2px;
+            margin-left: -1px;
+            background: var(--ink);
+        }
+
+        .empty {
+            padding: 2rem 1.25rem;
+            color: var(--ink-soft);
+            text-align: center;
+        }
+
+        @media (min-width: 900px) {
+            .summary {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .summary > div:last-child {
+                grid-column: auto;
+            }
+        }
+
+        @media (min-width: 960px) {
+            .page {
+                padding: 2rem 1.5rem 3rem;
+            }
+
+            .layout {
+                grid-template-columns: 22rem minmax(0, 1fr);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="page-header">
+            <h1>EcoGrid campus electricity billing</h1>
+            <p>Meter readings, bills and conservation rankings for residence halls.</p>
+        </header>
+
+        <main>
+            {% if message %}
+            <div class="notice {{ 'notice-error' if status == 'error' else 'notice-success' }}"
+                 role="{{ 'alert' if status == 'error' else 'status' }}">
+                <p>{{ message }}</p>
+                <a href="{{ url_for('index') }}">Dismiss</a>
+            </div>
+            {% endif %}
+
+            <section aria-label="Campus summary">
+                <dl class="summary">
+                    <div>
+                        <dt>Residents</dt>
+                        <dd>{{ total_students }}</dd>
+                    </div>
+                    <div>
+                        <dt>Total usage</dt>
+                        <dd>{{ "{:,.1f}".format(total_kwh) }} <span class="unit">kWh</span></dd>
+                    </div>
+                    <div>
+                        <dt>Saved below baseline</dt>
+                        <dd>{{ "{:,.1f}".format(total_saved) }} <span class="unit">kWh</span></dd>
+                    </div>
+                    <div>
+                        <dt>Under baseline</dt>
+                        <dd>{{ eco_compliant_count }} <span class="unit">of {{ total_students }}</span></dd>
+                    </div>
+                    <div>
+                        <dt>Points awarded</dt>
+                        <dd>{{ "{:,}".format(total_points) }}</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <div class="layout">
+                <div class="side">
+                    <section class="panel" aria-labelledby="entry-title">
+                        <div class="panel-head">
+                            <h2 id="entry-title">Record a meter reading</h2>
+                        </div>
+
+                        <form class="panel-body" action="{{ url_for('submit_reading') }}" method="post">
+                            <div class="field">
+                                <label for="student_id">Resident</label>
+                                <select id="student_id" name="student_id" required>
+                                    <option value="" disabled selected>Select a resident</option>
+                                    {% for student in dropdown_students %}
+                                    <option value="{{ student.id }}">
+                                        {{ student.room_number }} &ndash; {{ student.name }} ({{ "%.1f"|format(student.kwh_used) }} kWh)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="field">
+                                <label for="new_kwh_reading">Meter reading (kWh)</label>
+                                <input
+                                    type="number"
+                                    id="new_kwh_reading"
+                                    name="new_kwh_reading"
+                                    step="0.1"
+                                    min="0"
+                                    max="{{ max_reading_kwh }}"
+                                    inputmode="decimal"
+                                    autocomplete="off"
+                                    aria-describedby="reading-hint"
+                                    required
+                                >
+                                <p class="hint" id="reading-hint">
+                                    Replaces the resident&rsquo;s current reading and recalculates their bill and points.
+                                </p>
+                            </div>
+
+                            <button class="button" type="submit">Save reading</button>
+                        </form>
+
+                        <div class="terms">
+                            <h3>Billing terms</h3>
+                            <dl>
+                                <div>
+                                    <dt>Monthly baseline</dt>
+                                    <dd>{{ "%.0f"|format(baseline_kwh) }} kWh</dd>
+                                </div>
+                                <div>
+                                    <dt>Rate</dt>
+                                    <dd>{{ currency_symbol }}{{ "%.2f"|format(rate_per_kwh) }} per kWh</dd>
+                                </div>
+                                <div>
+                                    <dt>Points</dt>
+                                    <dd>{{ points_per_kwh }} per kWh below baseline</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+
+                    <section class="panel" aria-labelledby="add-title">
+                        <div class="panel-head">
+                            <h2 id="add-title">Add a resident</h2>
+                        </div>
+
+                        <form class="panel-body" action="{{ url_for('add_student') }}" method="post">
+                            <div class="field">
+                                <label for="name">Name</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    maxlength="{{ max_name_length }}"
+                                    autocomplete="off"
+                                    required
+                                >
+                            </div>
+
+                            <div class="field">
+                                <label for="room_number">Room number</label>
+                                <input
+                                    type="text"
+                                    id="room_number"
+                                    name="room_number"
+                                    maxlength="{{ max_room_length }}"
+                                    placeholder="A-101"
+                                    autocomplete="off"
+                                    aria-describedby="room-hint"
+                                    required
+                                >
+                                <p class="hint" id="room-hint">Each room can have one resident.</p>
+                            </div>
+
+                            <div class="field">
+                                <label for="kwh_reading">Current meter reading (kWh)</label>
+                                <input
+                                    type="number"
+                                    id="kwh_reading"
+                                    name="kwh_reading"
+                                    step="0.1"
+                                    min="0"
+                                    max="{{ max_reading_kwh }}"
+                                    inputmode="decimal"
+                                    autocomplete="off"
+                                    aria-describedby="initial-hint"
+                                    required
+                                >
+                                <p class="hint" id="initial-hint">
+                                    Used to calculate the resident&rsquo;s first bill and points.
+                                </p>
+                            </div>
+
+                            <button class="button" type="submit">Add resident</button>
+                        </form>
+                    </section>
+                </div>
+
+                <section class="panel" aria-labelledby="board-title">
+                    <div class="panel-head">
+                        <h2 id="board-title">Leaderboard</h2>
+                        <p>
+                            Ranked by points, then lowest usage. The mark on each bar is the
+                            {{ "%.0f"|format(baseline_kwh) }} kWh baseline.
+                        </p>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <caption class="visually-hidden">Residents ranked by reward points</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Rank</th>
+                                    <th scope="col">Resident</th>
+                                    <th scope="col">Usage</th>
+                                    <th scope="col" class="num">Bill</th>
+                                    <th scope="col" class="num">Points</th>
+                                    <th scope="col">Tier</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                {% set bar_pct = [student.kwh_used / (baseline_kwh * 1.5) * 100, 100] | min %}
+                                <tr>
+                                    <td class="rank">{{ student.rank }}</td>
+                                    <th scope="row">
+                                        <span class="name">{{ student.name }}</span>
+                                        <span class="room">Room {{ student.room_number }}</span>
+                                    </th>
+                                    <td class="usage">
+                                        <div class="usage-figures">
+                                            <span>{{ "%.1f"|format(student.kwh_used) }} kWh</span>
+                                            {% if student.kwh_used < baseline_kwh %}
+                                            <span class="usage-delta under">{{ "%.1f"|format(student.kwh_saved) }} kWh below baseline</span>
+                                            {% elif student.kwh_used > baseline_kwh %}
+                                            <span class="usage-delta over">{{ "%.1f"|format(student.kwh_used - baseline_kwh) }} kWh over baseline</span>
+                                            {% else %}
+                                            <span class="usage-delta">At baseline</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="bar" aria-hidden="true">
+                                            <div class="bar-fill{{ ' over' if student.kwh_used > baseline_kwh else '' }}" style="width: {{ '%.1f'|format(bar_pct) }}%;"></div>
+                                            <div class="bar-mark"></div>
+                                        </div>
+                                    </td>
+                                    <td class="num">{{ currency_symbol }}{{ "{:,.2f}".format(student.total_bill) }}</td>
+                                    <td class="num">{{ student.reward_points }}</td>
+                                    <td class="tier">{{ student.eco_tier }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty">No resident records to display.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

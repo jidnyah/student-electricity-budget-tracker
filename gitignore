@@ -1,8 +1,0 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-.vscode/
-
-# Local database, created on first run
-billing.db

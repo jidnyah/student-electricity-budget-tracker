@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if bills|length == 1 %}Bill {{ bills[0].number }}{% else %}Electricity bills{% endif %} – EcoGrid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #16181f;
+            --soft: #5b6172;
+            --line: #dfe2ea;
+            --page: #e9ebf1;
+            --violet: #5b3fd9;
+            --violet-tint: #efeafe;
+            --mint: #0f8f5f;
+            --mint-tint: #e3f6ee;
+            --coral: #c8402f;
+            --coral-tint: #fdebe8;
+            --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+            --body: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        * {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            margin: 0;
+            background: var(--page);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        :focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+
+        /* Screen-only toolbar */
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem 1rem;
+            padding: 0.75rem 1.25rem;
+            background: #0c0e17;
+            color: #eef0f7;
+        }
+
+        .toolbar a { color: #b8a5ff; text-decoration: none; font-weight: 500; }
+        .toolbar a:hover { text-decoration: underline; }
+        .toolbar .spacer { flex: 1; }
+        .toolbar .tip { color: #a3a9bf; font-size: 0.82rem; }
+
+        .toolbar select {
+            padding: 0.45rem 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: #151826;
+            color: inherit;
+            font: inherit;
+        }
+
+        .toolbar button {
+            padding: 0.6rem 1.2rem;
+            border: 0;
+            border-radius: 999px;
+            background: #8b6cff;
+            color: #0a0714;
+            font: 700 0.9rem var(--body);
+            cursor: pointer;
+        }
+
+        .toolbar button:hover { background: #b8a5ff; }
+
+        .stack { padding: 1.5rem 1rem 3rem; }
+
+        /* The bill itself: one A4 sheet */
+        .sheet {
+            position: relative;
+            width: 210mm;
+            max-width: 100%;
+            min-height: 297mm;
+            margin: 0 auto 1.5rem;
+            padding: 16mm;
+            background: #fff;
+            box-shadow: 0 10px 40px rgba(20, 20, 40, 0.18);
+            overflow: hidden;
+        }
+
+        .sheet::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 8px;
+            background: linear-gradient(90deg, var(--violet), var(--mint));
+        }
+
+        .head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            padding-top: 4mm;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font: 700 1.25rem var(--display);
+            letter-spacing: -0.02em;
+        }
+
+        .brand-orb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--violet) 45%, #2a1d7a);
+        }
+
+        .doc-title { text-align: right; }
+
+        .doc-title h1 {
+            margin: 0;
+            font: 700 1.05rem var(--display);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .doc-title p { margin: 0.2rem 0 0; color: var(--soft); font-size: 0.9rem; }
+
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 9mm 0 7mm;
+            padding: 5mm 0;
+            border-block: 1px solid var(--line);
+        }
+
+        .meta dt { color: var(--soft); font-size: 0.8rem; }
+        .meta dd { margin: 0.15rem 0 0; font-weight: 700; }
+        .meta dd small { display: block; font-weight: 400; color: var(--soft); font-size: 0.85rem; }
+
+        .total {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 6mm 7mm;
+            border-radius: 14px;
+            background: var(--violet-tint);
+        }
+
+        .total .label { color: var(--soft); font-size: 0.85rem; }
+        .total .amount { font: 700 2.1rem/1.1 var(--display); letter-spacing: -0.03em; color: var(--violet); }
+
+        .pill {
+            display: inline-block;
+            padding: 0.3rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .pill-under { background: var(--mint-tint); color: var(--mint); }
+        .pill-over { background: var(--coral-tint); color: var(--coral); }
+        .pill-at { background: #eceef3; color: var(--soft); }
+
+        h2 {
+            margin: 8mm 0 3mm;
+            font: 700 0.95rem var(--display);
+            letter-spacing: -0.01em;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th, td { padding: 0.65rem 0.5rem; text-align: left; border-bottom: 1px solid var(--line); }
+        th { color: var(--soft); font-size: 0.8rem; font-weight: 500; }
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        tfoot td { border-bottom: 0; font-weight: 700; font-size: 1.05rem; }
+
+        .two {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 6mm;
+        }
+
+        .box {
+            padding: 4.5mm 5mm;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+        }
+
+        .box h3 { margin: 0 0 0.5rem; font-size: 0.85rem; color: var(--soft); font-weight: 500; }
+        .box p { margin: 0.25rem 0 0; }
+        .big { font: 700 1.5rem/1.2 var(--display); letter-spacing: -0.02em; }
+
+        .meter {
+            position: relative;
+            height: 10px;
+            margin: 0.8rem 0 0.4rem;
+            border-radius: 99px;
+            background: #eceef3;
+        }
+
+        .meter-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--mint); }
+        .meter-fill.over { background: var(--coral); }
+        .meter-mark { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+        .meter-scale { display: flex; justify-content: space-between; color: var(--soft); font-size: 0.75rem; }
+
+        .chart { width: 100%; height: auto; display: block; }
+        .chart text { font-family: var(--body); fill: var(--soft); font-size: 11px; }
+        .chart .val { fill: var(--ink); font-weight: 700; }
+
+        .legend { display: flex; gap: 1.1rem; margin-top: 0.4rem; color: var(--soft); font-size: 0.78rem; }
+        .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 0.35rem; border-radius: 3px; }
+
+        .foot {
+            margin-top: 8mm;
+            padding-top: 4mm;
+            border-top: 1px solid var(--line);
+            color: var(--soft);
+            font-size: 0.78rem;
+        }
+
+        .empty { max-width: 40rem; margin: 3rem auto; padding: 2rem; background: #fff; border-radius: 14px; text-align: center; }
+
+        @media (max-width: 720px) {
+            .sheet { padding: 1.25rem; min-height: 0; }
+            .meta, .two { grid-template-columns: 1fr; }
+            .head { flex-direction: column; }
+            .doc-title { text-align: left; }
+            .total { flex-direction: column; align-items: flex-start; }
+        }
+
+        @page { size: A4; margin: 0; }
+
+        @media print {
+            body { background: #fff; }
+            .toolbar { display: none; }
+            .stack { padding: 0; }
+
+            .sheet {
+                width: 210mm;
+                height: 296mm;
+                min-height: 0;
+                margin: 0;
+                box-shadow: none;
+                break-after: page;
+                page-break-after: always;
+            }
+
+            .sheet:last-child { break-after: auto; page-break-after: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a href="{{ url_for('index') }}">&larr; Dashboard</a>
+        <label>
+            <span class="visually-hidden" style="position:absolute;left:-9999px;">Billing month</span>
+            <select id="period" aria-label="Billing month">
+                {% if bills|length != 1 %}
+                <option value="" {{ 'selected' if not selected_period }}>Latest reading per resident</option>
+                {% endif %}
+                {% for p in periods %}
+                <option value="{{ p.value }}" {{ 'selected' if p.value == selected_period }}>{{ p.label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <span class="tip">
+            {% if bills|length > 1 %}{{ bills|length }} bills, one per page. {% endif %}In the print dialog, set the destination to &ldquo;Save as PDF&rdquo;.
+        </span>
+        <span class="spacer"></span>
+        <button type="button" id="print-btn">Print / Save as PDF</button>
+    </div>
+
+    <main class="stack">
+        {% for b in bills %}
+        {% set status = 'under' if b.kwh < baseline_kwh else ('over' if b.kwh > baseline_kwh else 'at') %}
+        {% set meter_pct = [b.kwh / (baseline_kwh * 2) * 100, 100] | min %}
+        <article class="sheet" aria-label="Bill {{ b.number }}">
+            <header class="head">
+                <div class="brand"><span class="brand-orb"></span>EcoGrid</div>
+                <div class="doc-title">
+                    <h1>Electricity bill</h1>
+                    <p>{{ b.number }}</p>
+                </div>
+            </header>
+
+            <dl class="meta">
+                <div>
+                    <dt>Billed to</dt>
+                    <dd>{{ b.name }}<small>Room {{ b.room }}</small></dd>
+                </div>
+                <div>
+                    <dt>Billing period</dt>
+                    <dd>{{ b.period_label }}<small>{{ b.period_range }}</small></dd>
+                </div>
+                <div>
+                    <dt>Issued</dt>
+                    <dd>{{ b.issued }}</dd>
+                </div>
+            </dl>
+
+            <section class="total" aria-label="Amount payable">
+                <div>
+                    <div class="label">Amount payable</div>
+                    <div class="amount">{{ currency_symbol }}{{ "{:,.2f}".format(b.amount) }}</div>
+                </div>
+                <span class="pill pill-{{ status }}">
+                    {% if status == 'under' %}{{ "%.1f"|format(b.saved) }} kWh under baseline
+                    {% elif status == 'over' %}{{ "%.1f"|format(b.over) }} kWh over baseline
+                    {% else %}At baseline{% endif %}
+                </span>
+            </section>
+
+            <h2>Charges</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Description</th>
+                        <th scope="col" class="num">Units</th>
+                        <th scope="col" class="num">Rate</th>
+                        <th scope="col" class="num">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Electricity consumed, {{ b.period_label }}</td>
+                        <td class="num">{{ "%.1f"|format(b.kwh) }} kWh</td>
+                        <td class="num">{{ currency_symbol }}{{ "%.2f"|format(rate_per_kwh) }}</td>
+                        <td class="num">{{ currency_symbol }}{{ "{:,.2f}".format(b.amount) }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3">Total</td>
+                        <td class="num">{{ currency_symbol }}{{ "{:,.2f}".format(b.amount) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div class="two" style="margin-top: 7mm;">
+                <div class="box">
+                    <h3>Usage against the {{ "%.0f"|format(baseline_kwh) }} kWh baseline</h3>
+                    <div class="big">{{ "%.1f"|format(b.kwh) }} kWh</div>
+                    <div class="meter" role="img" aria-label="{{ '%.1f'|format(b.kwh) }} kWh used against a {{ '%.0f'|format(baseline_kwh) }} kWh baseline">
+                        <div class="meter-fill{{ ' over' if status == 'over' else '' }}" style="width: {{ '%.1f'|format(meter_pct) }}%;"></div>
+                        <div class="meter-mark"></div>
+                    </div>
+                    <div class="meter-scale"><span>0</span><span>{{ "%.0f"|format(baseline_kwh) }} baseline</span><span>{{ "%.0f"|format(baseline_kwh * 2) }}</span></div>
+                    {% if b.comparison %}
+                    <p style="margin-top: 0.8rem; font-size: 0.85rem;">
+                        {% if b.comparison.delta < 0 %}
+                        Down {{ "%.1f"|format(-b.comparison.delta) }} kWh
+                        {% elif b.comparison.delta > 0 %}
+                        Up {{ "%.1f"|format(b.comparison.delta) }} kWh
+                        {% else %}
+                        Unchanged
+                        {% endif %}
+                        {% if b.comparison.percent is not none and b.comparison.delta != 0 %}({{ "%.1f"|format(b.comparison.percent|abs) }}%){% endif %}
+                        from {{ b.comparison.label }} ({{ "%.1f"|format(b.comparison.kwh) }} kWh).
+                    </p>
+                    {% endif %}
+                </div>
+
+                <div class="box">
+                    <h3>Reward points</h3>
+                    <div class="big">{{ b.points }}</div>
+                    <p>
+                        <span class="pill pill-{{ 'under' if b.points > 0 else 'over' }}">{{ b.tier }}</span>
+                    </p>
+                    <p style="font-size: 0.85rem; color: var(--soft);">
+                        {% if b.saved > 0 %}
+                        {{ "%.1f"|format(b.saved) }} kWh saved &times; {{ points_per_kwh }} points.
+                        {% else %}
+                        Points are earned for every kWh used below the baseline.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <h2>Usage history</h2>
+            {% set c = b.chart %}
+            <svg class="chart" viewBox="0 0 {{ c.w }} {{ c.h }}" role="img"
+                 aria-label="Monthly usage in kWh for the last {{ c.bars|length }} months: {% for bar in c.bars %}{{ bar.label }} {{ '%.1f'|format(bar.kwh) }}{{ ', ' if not loop.last }}{% endfor %}">
+                <line x1="{{ c.left }}" x2="{{ c.w - 8 }}" y1="{{ c.axis_y }}" y2="{{ c.axis_y }}" stroke="#dfe2ea" />
+                {% for bar in c.bars %}
+                <rect x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.w }}" height="{{ bar.h }}" rx="4"
+                      fill="{{ '#c8402f' if bar.over else '#0f8f5f' }}" opacity="{{ '1' if bar.current else '0.4' }}" />
+                <text class="val" x="{{ bar.cx }}" y="{{ bar.y - 5 }}" text-anchor="middle">{{ "%.1f"|format(bar.kwh) }}</text>
+                <text x="{{ bar.cx }}" y="{{ c.axis_y + 16 }}" text-anchor="middle">{{ bar.label }}</text>
+                {% endfor %}
+                <line x1="{{ c.left }}" x2="{{ c.w - 8 }}" y1="{{ c.baseline_y }}" y2="{{ c.baseline_y }}" stroke="#16181f" stroke-width="1.2" stroke-dasharray="5 4" />
+                <text x="{{ c.left - 6 }}" y="{{ c.baseline_y + 4 }}" text-anchor="end">{{ "%.0f"|format(baseline_kwh) }}</text>
+            </svg>
+            <div class="legend">
+                <span><i style="background:#0f8f5f"></i>Under baseline</span>
+                <span><i style="background:#c8402f"></i>Over baseline</span>
+                <span>Dashed line: {{ "%.0f"|format(baseline_kwh) }} kWh baseline. This bill&rsquo;s month is shown in full colour.</span>
+            </div>
+
+            <footer class="foot">
+                Billed at {{ currency_symbol }}{{ "%.2f"|format(rate_per_kwh) }} per kWh. Reward points are {{ points_per_kwh }} per kWh used below the
+                {{ "%.0f"|format(baseline_kwh) }} kWh monthly baseline. This statement was generated by EcoGrid.
+            </footer>
+        </article>
+        {% else %}
+        <div class="empty">
+            <h2 style="margin-top: 0;">No bills for this period</h2>
+            <p>No resident has a reading recorded for the selected month. Choose another month above.</p>
+        </div>
+        {% endfor %}
+    </main>
+
+    <script>
+        document.getElementById('print-btn').addEventListener('click', function () { window.print(); });
+        document.getElementById('period').addEventListener('change', function () {
+            window.location.href = this.value ? '?period=' + encodeURIComponent(this.value) : window.location.pathname;
+        });
+    </script>
+</body>
+</html>

@@ -3,665 +3,944 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light">
+    <meta name="color-scheme" content="dark">
     <title>EcoGrid – Campus electricity billing</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --page: #f4f6f8;
-            --surface: #ffffff;
-            --ink: #14202b;
-            --ink-soft: #4a5866;
-            --ink-faint: #5f6b78;
-            --line: #d8dee5;
-            --line-soft: #e8ecf0;
-            --control-border: #8a96a3;
-            --accent: #0b5d4b;
-            --accent-strong: #084a3b;
-            --accent-tint: #e6f2ee;
-            --over: #a8381f;
-            --over-tint: #fbece8;
-            --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            --bg: #07080d;
+            --panel: rgba(255, 255, 255, 0.035);
+            --panel-2: rgba(255, 255, 255, 0.07);
+            --line: rgba(255, 255, 255, 0.09);
+            --line-2: rgba(255, 255, 255, 0.17);
+            --ink: #eef0f7;
+            --soft: #a3a9bf;
+            --faint: #7d839c;
+            --violet: #8b6cff;
+            --violet-2: #b8a5ff;
+            --mint: #3ddc97;
+            --coral: #ff6b5b;
+            --amber: #ffc24d;
+            --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+            --body: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            --r: 18px;
         }
 
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { box-sizing: border-box; }
+        [hidden] { display: none !important; }
 
-        html {
-            -webkit-text-size-adjust: 100%;
-        }
+        html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
         body {
             margin: 0;
-            background: var(--page);
             color: var(--ink);
-            font-family: var(--font);
-            font-size: 0.9375rem;
-            line-height: 1.5;
+            font-family: var(--body);
+            font-size: 1rem;
+            line-height: 1.55;
+            background:
+                radial-gradient(900px 620px at 88% -8%, rgba(139, 108, 255, 0.22), transparent 60%),
+                radial-gradient(700px 520px at -8% 42%, rgba(61, 220, 151, 0.08), transparent 60%),
+                var(--bg);
+            background-attachment: fixed;
         }
 
-        .page {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem 1rem 2.5rem;
-        }
+        :focus-visible { outline: 2px solid var(--violet-2); outline-offset: 3px; }
 
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            margin: -1px;
-            padding: 0;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
+        .wrap { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
-        :focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-
-        /* Page header */
-        .page-header {
-            margin-bottom: 1.5rem;
-        }
-
-        .page-header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: 600;
-            line-height: 1.25;
-            letter-spacing: -0.01em;
-        }
-
-        .page-header p {
-            margin: 0.25rem 0 0;
-            color: var(--ink-soft);
-        }
-
-        /* Feedback notice (from ?status= and ?message=) */
-        .notice {
+        /* ---------- Nav ---------- */
+        .nav {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            z-index: 50;
             display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding: 0.85rem 1.1rem;
-            border: 1px solid var(--line);
-            border-left-width: 4px;
-            border-radius: 6px;
-        }
-
-        .notice p {
-            margin: 0;
-        }
-
-        .notice a {
-            flex: none;
-            color: inherit;
-            font-size: 0.875rem;
-        }
-
-        .notice-success {
-            background: var(--accent-tint);
-            border-color: var(--accent);
-        }
-
-        .notice-error {
-            background: var(--over-tint);
-            border-color: var(--over);
-        }
-
-        /* Campus summary */
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1px;
-            margin: 0 0 1.5rem;
-            background: var(--line);
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .summary > div {
-            padding: 0.9rem 1.1rem;
-            background: var(--surface);
-        }
-
-        .summary > div:last-child {
-            grid-column: 1 / -1;
-        }
-
-        .summary dt {
-            color: var(--ink-faint);
-            font-size: 0.8125rem;
-        }
-
-        .summary dd {
-            margin: 0.15rem 0 0;
-            font-size: 1.25rem;
-            font-weight: 600;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .summary .unit {
-            color: var(--ink-soft);
-            font-size: 0.875rem;
-            font-weight: 400;
-        }
-
-        /* Layout */
-        .layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr);
-            gap: 1.5rem;
-            align-items: start;
-        }
-
-        .side {
-            display: grid;
-            gap: 1.5rem;
-        }
-
-        .panel {
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: 6px;
-        }
-
-        .panel-head {
-            padding: 1.1rem 1.25rem 0.9rem;
-            border-bottom: 1px solid var(--line-soft);
-        }
-
-        .panel-head h2 {
-            margin: 0;
-            font-size: 1.0625rem;
-            font-weight: 600;
-            line-height: 1.3;
-        }
-
-        .panel-head p {
-            margin: 0.2rem 0 0;
-            color: var(--ink-soft);
-            font-size: 0.875rem;
-        }
-
-        .panel-body {
-            padding: 1.25rem;
-        }
-
-        /* Forms */
-        .field + .field {
-            margin-top: 1rem;
-        }
-
-        .field label {
-            display: block;
-            margin-bottom: 0.35rem;
-            font-weight: 500;
-        }
-
-        .field select,
-        .field input {
-            width: 100%;
-            height: 2.5rem;
-            padding: 0 0.75rem;
-            color: var(--ink);
-            font: inherit;
-            background: var(--surface);
-            border: 1px solid var(--control-border);
-            border-radius: 4px;
-        }
-
-        .field select:focus-visible,
-        .field input:focus-visible {
-            outline-offset: 0;
-            border-color: var(--accent);
-        }
-
-        .hint {
-            margin: 0.4rem 0 0;
-            color: var(--ink-faint);
-            font-size: 0.8125rem;
-        }
-
-        .button {
-            width: 100%;
-            height: 2.625rem;
-            margin-top: 1.25rem;
-            color: #ffffff;
-            font: inherit;
-            font-weight: 600;
-            background: var(--accent);
-            border: 0;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .button:hover {
-            background: var(--accent-strong);
-        }
-
-        /* Billing terms */
-        .terms {
-            padding: 1.1rem 1.25rem 1.25rem;
-            border-top: 1px solid var(--line-soft);
-        }
-
-        .terms h3 {
-            margin: 0 0 0.4rem;
-            font-size: 0.9375rem;
-            font-weight: 600;
-        }
-
-        .terms dl {
-            margin: 0;
-        }
-
-        .terms dl > div {
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            padding: 0.4rem 0;
-        }
-
-        .terms dt {
-            color: var(--ink-soft);
-        }
-
-        .terms dd {
-            margin: 0;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        /* Leaderboard table */
-        .table-wrap {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            min-width: 46rem;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 0.8rem 1rem;
-            text-align: left;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--line-soft);
-        }
-
-        th:first-child,
-        td:first-child {
-            padding-left: 1.25rem;
-        }
-
-        th:last-child,
-        td:last-child {
-            padding-right: 1.25rem;
-        }
-
-        thead th {
-            color: var(--ink-faint);
-            font-size: 0.8125rem;
-            font-weight: 500;
-            white-space: nowrap;
-            border-bottom-color: var(--line);
-        }
-
-        tbody tr:last-child > * {
-            border-bottom: 0;
-        }
-
-        tbody th {
-            font-weight: 400;
-        }
-
-        .num {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .rank {
-            width: 3.5rem;
-            color: var(--ink-soft);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .name {
-            display: block;
-            font-weight: 500;
-        }
-
-        .room {
-            display: block;
-            color: var(--ink-faint);
-            font-size: 0.8125rem;
-        }
-
-        .tier {
-            color: var(--ink-soft);
-            white-space: nowrap;
-        }
-
-        .usage {
-            min-width: 14rem;
-        }
-
-        .usage-figures {
-            display: flex;
-            align-items: baseline;
+            align-items: center;
             justify-content: space-between;
             gap: 0.75rem;
-            font-variant-numeric: tabular-nums;
+            width: min(1120px, calc(100% - 1.5rem));
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+            transform: translateX(-50%);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(10, 12, 20, 0.68);
+            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px);
         }
 
-        .usage-delta {
-            color: var(--ink-soft);
-            font-size: 0.8125rem;
+        .brand { display: flex; align-items: center; gap: 0.6rem; color: var(--ink); font: 700 0.95rem var(--display); letter-spacing: -0.02em; text-decoration: none; }
+        .brand-orb { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #fff, var(--violet) 42%, #2a1d7a); box-shadow: 0 0 18px rgba(139, 108, 255, 0.6); }
+
+        .nav-links { display: flex; gap: 0.2rem; overflow-x: auto; scrollbar-width: none; }
+        .nav-links a { padding: 0.45rem 0.9rem; border-radius: 999px; color: var(--soft); font-size: 0.9rem; text-decoration: none; white-space: nowrap; transition: color 0.2s, background 0.2s; }
+        .nav-links a:hover { color: var(--ink); }
+        .nav-links a.active { background: var(--panel-2); color: var(--ink); }
+
+        /* ---------- Buttons ---------- */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.8rem 1.4rem; border: 1px solid transparent; border-radius: 999px; font: 700 0.95rem var(--body); text-decoration: none; cursor: pointer; transition: transform 0.15s, background 0.2s, border-color 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--violet); color: #0a0714; box-shadow: 0 10px 34px -10px rgba(139, 108, 255, 0.8); }
+        .btn-primary:hover { background: var(--violet-2); }
+        .btn-ghost { border-color: var(--line-2); background: transparent; color: var(--ink); }
+        .btn-ghost:hover { background: var(--panel-2); }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; }
+        .btn-block { width: 100%; }
+
+        /* ---------- Hero ---------- */
+        .hero { display: grid; grid-template-columns: 1.1fr 0.9fr; align-items: center; gap: 2rem; min-height: 100svh; padding: 7rem 0 3rem; }
+        .hero h1 { margin: 0; font: 700 clamp(2.8rem, 7.2vw, 6rem)/0.95 var(--display); letter-spacing: -0.04em; }
+        .hero .tag { margin: 1.4rem 0 0.8rem; color: var(--violet-2); font-size: clamp(1.15rem, 2.3vw, 1.6rem); font-weight: 500; }
+        .hero .lead { max-width: 33rem; margin: 0 0 2rem; color: var(--soft); font-size: 1.05rem; }
+        .cta-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+
+        .orb { position: relative; display: grid; place-items: center; width: min(440px, 80vw); aspect-ratio: 1; margin: 0 auto; perspective: 900px; }
+        .orb-tilt { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.18s ease-out; }
+        .ring { position: absolute; inset: var(--i, 4%); padding: 3px; border-radius: 50%; background: conic-gradient(from 20deg, var(--violet), transparent 38%, var(--mint) 62%, transparent 82%, var(--violet)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+        .ring.r1 { animation: spinA 14s linear infinite; }
+        .ring.r2 { --i: 12%; animation: spinB 18s linear infinite; }
+        .ring.r3 { --i: 22%; animation: spinC 11s linear infinite; }
+        .core { position: absolute; inset: 34%; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #fff 0, #d9ceff 14%, var(--violet) 46%, #231672 100%); box-shadow: 0 0 80px 10px rgba(139, 108, 255, 0.5), inset -14px -18px 40px rgba(0, 0, 0, 0.45); animation: pulse 4s ease-in-out infinite; }
+        .orb-chip { position: absolute; right: 0; bottom: 8%; z-index: 2; padding: 0.7rem 1rem; border: 1px solid var(--line-2); border-radius: 14px; background: rgba(10, 12, 20, 0.8); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-size: 0.85rem; color: var(--soft); }
+        .orb-chip strong { display: block; color: var(--mint); font: 700 1.3rem var(--display); letter-spacing: -0.02em; }
+
+        @keyframes spinA { from { transform: rotateX(72deg) rotateZ(0); } to { transform: rotateX(72deg) rotateZ(360deg); } }
+        @keyframes spinB { from { transform: rotateY(72deg) rotateZ(0); } to { transform: rotateY(72deg) rotateZ(-360deg); } }
+        @keyframes spinC { from { transform: rotateX(28deg) rotateY(28deg) rotateZ(0); } to { transform: rotateX(28deg) rotateY(28deg) rotateZ(360deg); } }
+        @keyframes pulse { 50% { box-shadow: 0 0 110px 22px rgba(139, 108, 255, 0.62), inset -14px -18px 40px rgba(0, 0, 0, 0.45); } }
+        @keyframes grow { from { width: 0; } }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* ---------- Stats ---------- */
+        .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r); background: var(--line); }
+        .stat { padding: 1.25rem 1.3rem; background: #0b0d16; }
+        .stat dt { color: var(--faint); font-size: 0.85rem; }
+        .stat dd { margin: 0.3rem 0 0; font: 700 1.35rem var(--display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+        .stat .unit { color: var(--soft); font: 400 0.85rem var(--body); letter-spacing: 0; }
+
+        /* ---------- Sections ---------- */
+        .section { padding: 6rem 0 0; scroll-margin-top: 80px; }
+        .section-title { margin: 0 0 0.6rem; font: 700 clamp(2rem, 5.5vw, 4rem)/1 var(--display); letter-spacing: -0.03em; text-transform: uppercase; }
+        .section-sub { max-width: 38rem; margin: 0 0 2.2rem; color: var(--soft); }
+
+        .billing { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 2.5rem; align-items: center; padding-top: 5rem; scroll-margin-top: 80px; }
+        .billing h2 { margin: 0 0 1rem; font: 700 clamp(1.5rem, 3vw, 2.2rem)/1.15 var(--display); letter-spacing: -0.03em; }
+        .billing p { margin: 0 0 1.5rem; color: var(--soft); max-width: 30rem; }
+
+        .panel { border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+        .panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.8rem 1rem; padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--line); }
+        .panel-head h3 { margin: 0; font: 700 1.05rem var(--display); letter-spacing: -0.02em; }
+        .panel-head p { margin: 0.2rem 0 0; color: var(--soft); font-size: 0.88rem; }
+        .panel-body { padding: 1.4rem; }
+
+        /* ---------- Terminal ---------- */
+        .term { overflow: hidden; border: 1px solid var(--line-2); border-radius: var(--r); background: #05060a; font-family: var(--mono); box-shadow: 0 30px 80px -30px rgba(139, 108, 255, 0.35); }
+        .term-bar { display: flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1rem; border-bottom: 1px solid var(--line); color: var(--faint); font-size: 0.8rem; }
+        .term-bar i { width: 10px; height: 10px; border-radius: 50%; background: #2a2e40; }
+        .term-bar span { margin-left: 0.5rem; }
+        .term-body { padding: 1.2rem 1.4rem 1.5rem; font-size: 0.88rem; line-height: 1.85; }
+        .term-body p { margin: 0; }
+        .prompt { color: var(--mint); }
+        .k { display: inline-block; min-width: 6.5rem; color: var(--faint); }
+        .caret { display: inline-block; width: 0.55em; height: 1.05em; background: var(--mint); vertical-align: -2px; animation: blink 1.1s steps(1) infinite; }
+        .term-gap { height: 0.9rem; }
+        .term-input { width: 5.5rem; padding: 0.1rem 0.4rem; border: 1px solid var(--line-2); border-radius: 6px; background: transparent; color: var(--amber); font: inherit; }
+        .term-range { display: block; width: 100%; margin: 0.7rem 0 0.4rem; accent-color: var(--violet); }
+        .est-val { color: var(--ink); font-weight: 500; }
+
+        .meter { position: relative; height: 8px; margin: 0.8rem 0 0.3rem; border-radius: 99px; background: rgba(255, 255, 255, 0.08); }
+        .meter-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--mint); transition: width 0.25s, background 0.25s; }
+        .meter-fill.over { background: var(--coral); }
+        .meter-mark { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; background: var(--amber); }
+
+        /* ---------- Chips / badges ---------- */
+        .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .chip { padding: 0.4rem 0.9rem; border: 1px solid var(--line-2); border-radius: 999px; background: transparent; color: var(--soft); font: 500 0.85rem var(--body); cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+        .chip:hover { color: var(--ink); border-color: var(--violet-2); }
+        .chip[aria-pressed="true"] { border-color: var(--violet); background: var(--violet); color: #0a0714; }
+
+        .badge { display: inline-block; padding: 0.2rem 0.65rem; border: 1px solid; border-radius: 999px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+        .badge-guardian { color: #ffd978; border-color: rgba(255, 194, 77, 0.45); background: rgba(255, 194, 77, 0.1); }
+        .badge-warrior { color: var(--violet-2); border-color: rgba(139, 108, 255, 0.5); background: rgba(139, 108, 255, 0.13); }
+        .badge-saver { color: var(--mint); border-color: rgba(61, 220, 151, 0.45); background: rgba(61, 220, 151, 0.1); }
+        .badge-over { color: #ff9a8d; border-color: rgba(255, 107, 91, 0.5); background: rgba(255, 107, 91, 0.1); }
+
+        /* ---------- Energy ---------- */
+        .energy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+        .chart-box { position: relative; height: 300px; }
+        .chart-fallback { padding: 2rem 0; color: var(--soft); text-align: center; }
+
+        .res-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 1rem; }
+        .res-name { margin: 0; font: 700 1.2rem var(--display); letter-spacing: -0.02em; }
+        .res-room { color: var(--soft); font-size: 0.9rem; }
+        .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 1.1rem; }
+        .tile { padding: 0.7rem 0.8rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.03); }
+        .tile dt { color: var(--faint); font-size: 0.75rem; }
+        .tile dd { margin: 0.15rem 0 0; font-weight: 700; font-size: 0.98rem; font-variant-numeric: tabular-nums; }
+        .tile dd.good { color: var(--mint); }
+        .tile dd.bad { color: var(--coral); }
+        .res-note { min-height: 1.4em; margin: 0.8rem 0 0; color: var(--soft); font-size: 0.85rem; }
+        .res-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+
+        /* ---------- Leaderboard ---------- */
+        .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.25rem; }
+        .pod { position: relative; padding: 1.3rem; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s, transform 0.2s; }
+        .pod:hover { transform: translateY(-3px); border-color: var(--violet); }
+        .pod:first-child { border-color: rgba(139, 108, 255, 0.55); background: linear-gradient(180deg, rgba(139, 108, 255, 0.15), rgba(255, 255, 255, 0.03)); }
+        .pod-rank { display: block; color: rgba(255, 255, 255, 0.14); font: 700 3.4rem/1 var(--display); letter-spacing: -0.05em; }
+        .pod-name { display: block; margin-top: 0.4rem; font-weight: 700; font-size: 1.05rem; }
+        .pod-room { display: block; color: var(--soft); font-size: 0.85rem; }
+        .pod-pts { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.9rem; }
+        .pod-pts strong { font: 700 1.3rem var(--display); letter-spacing: -0.03em; }
+
+        .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.8rem 1rem; padding: 1rem 1.4rem; border-bottom: 1px solid var(--line); }
+        .search { position: relative; flex: 1 1 14rem; max-width: 20rem; }
+        .search input { padding-left: 2.4rem; }
+        .search svg { position: absolute; left: 0.85rem; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+        .count { color: var(--faint); font-size: 0.85rem; }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.95rem 1rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+        thead th { color: var(--faint); font-size: 0.8rem; font-weight: 500; white-space: nowrap; }
+        tbody tr { transition: background 0.15s; }
+        tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+        tbody tr:last-child td { border-bottom: 0; }
+        tr.is-selected { background: rgba(139, 108, 255, 0.09); box-shadow: inset 3px 0 0 var(--violet); }
+        .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .rank { color: var(--faint); font: 700 0.95rem var(--display); }
+
+        .th-sort { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+        .th-sort:hover { color: var(--ink); }
+        th[aria-sort="ascending"] .th-sort::after { content: " \2191"; color: var(--violet-2); }
+        th[aria-sort="descending"] .th-sort::after { content: " \2193"; color: var(--violet-2); }
+
+        .name-btn { display: block; padding: 0; border: 0; background: none; color: var(--ink); font: 700 1rem var(--body); text-align: left; cursor: pointer; }
+        .name-btn:hover { color: var(--violet-2); }
+        .room { display: block; color: var(--soft); font-size: 0.82rem; }
+
+        .usage-figures { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 0.8rem; min-width: 170px; font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+        .delta { color: var(--soft); }
+        .delta.under { color: var(--mint); }
+        .delta.over { color: var(--coral); }
+        .bar { position: relative; height: 6px; margin-top: 0.5rem; border-radius: 99px; background: rgba(255, 255, 255, 0.08); }
+        .bar-fill { position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: inherit; background: var(--mint); animation: grow 1s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+        .bar-fill.over { background: var(--coral); }
+        .bar-mark { position: absolute; left: 66.67%; top: -4px; bottom: -4px; width: 2px; background: var(--amber); }
+        .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+        .empty { padding: 2rem 1rem; color: var(--soft); text-align: center; }
+
+        /* ---------- Forms ---------- */
+        .forms { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+        .field + .field { margin-top: 1.1rem; }
+        .field label { display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.92rem; }
+        input, select { width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--line-2); border-radius: 12px; background: rgba(255, 255, 255, 0.04); color: var(--ink); font: inherit; transition: border-color 0.2s, background 0.2s; }
+        input:hover, select:hover { background: rgba(255, 255, 255, 0.06); }
+        input:focus, select:focus { border-color: var(--violet); outline: none; box-shadow: 0 0 0 3px rgba(139, 108, 255, 0.25); }
+        input:user-invalid { border-color: var(--coral); }
+        select option { background: #12141f; color: var(--ink); }
+        .hint { margin: 0.4rem 0 0; color: var(--faint); font-size: 0.82rem; }
+        .hint.warn { color: var(--coral); }
+
+        .preview { display: block; margin: 1.2rem 0; padding: 0.9rem 1rem; border: 1px dashed var(--line-2); border-radius: 12px; color: var(--soft); font-size: 0.9rem; }
+        .preview strong { color: var(--ink); }
+
+        /* ---------- Toast ---------- */
+        .toast { position: fixed; right: 1rem; bottom: 1rem; z-index: 80; display: flex; align-items: flex-start; gap: 0.8rem; max-width: min(26rem, calc(100% - 2rem)); padding: 0.95rem 1rem 0.95rem 1.1rem; border: 1px solid var(--line-2); border-left-width: 4px; border-radius: 14px; background: #10121c; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); animation: toast-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .toast p { margin: 0; font-size: 0.92rem; }
+        .toast-ok { border-left-color: var(--mint); }
+        .toast-error { border-left-color: var(--coral); }
+        .toast.out { opacity: 0; transform: translateY(8px); transition: 0.3s; }
+        .toast-x { flex: none; padding: 0 0.2rem; border: 0; background: none; color: var(--soft); font-size: 1.3rem; line-height: 1; cursor: pointer; }
+        .toast-x:hover { color: var(--ink); }
+        @keyframes toast-in { from { opacity: 0; transform: translateY(14px); } }
+
+        .site-foot { margin-top: 6rem; padding: 2rem 0 3rem; border-top: 1px solid var(--line); color: var(--faint); font-size: 0.85rem; }
+
+        /* ---------- Responsive ---------- */
+        @media (max-width: 980px) {
+            .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 6.5rem; }
+            .orb { order: -1; width: min(300px, 70vw); }
+            .billing, .energy-grid, .forms { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .stat:last-child { grid-column: 1 / -1; }
         }
 
-        .usage-delta.under {
-            color: var(--accent);
-        }
-
-        .usage-delta.over {
-            color: var(--over);
-        }
-
-        /* Bars run from 0 to 150% of the baseline; the mark sits at 100%. */
-        .bar {
-            position: relative;
-            height: 6px;
-            margin-top: 0.45rem;
-            background: var(--line-soft);
-            border-radius: 3px;
-        }
-
-        .bar-fill {
-            height: 100%;
-            background: var(--accent);
-            border-radius: 3px;
-        }
-
-        .bar-fill.over {
-            background: var(--over);
-        }
-
-        .bar-mark {
-            position: absolute;
-            top: -3px;
-            bottom: -3px;
-            left: 66.667%;
-            width: 2px;
-            margin-left: -1px;
-            background: var(--ink);
-        }
-
-        .empty {
-            padding: 2rem 1.25rem;
-            color: var(--ink-soft);
-            text-align: center;
-        }
-
-        @media (min-width: 900px) {
-            .summary {
-                grid-template-columns: repeat(5, 1fr);
-            }
-
-            .summary > div:last-child {
-                grid-column: auto;
-            }
-        }
-
-        @media (min-width: 960px) {
-            .page {
-                padding: 2rem 1.5rem 3rem;
-            }
-
-            .layout {
-                grid-template-columns: 22rem minmax(0, 1fr);
-            }
+        @media (max-width: 640px) {
+            .nav .btn { display: none; }
+            .podium { grid-template-columns: 1fr; }
+            .tiles { grid-template-columns: repeat(2, 1fr); }
+            .section { padding-top: 4.5rem; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            * {
-                transition: none !important;
-            }
+            html { scroll-behavior: auto; }
+            *, *::before, *::after { animation: none !important; transition: none !important; }
         }
     </style>
 </head>
 <body>
-    <div class="page">
-        <header class="page-header">
-            <h1>EcoGrid campus electricity billing</h1>
-            <p>Meter readings, bills and conservation rankings for residence halls.</p>
-        </header>
+    <nav class="nav" aria-label="Primary">
+        <a class="brand" href="#overview"><span class="brand-orb"></span>EcoGrid</a>
+        <div class="nav-links">
+            <a href="#overview" class="active">Overview</a>
+            <a href="#energy">Energy use</a>
+            <a href="#leaderboard">Leaderboard</a>
+            <a href="#meters">Meters</a>
+        </div>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('all_bills') }}" target="_blank" rel="noopener">All bills</a>
+    </nav>
 
-        <main>
-            {% if message %}
-            <div class="notice {{ 'notice-error' if status == 'error' else 'notice-success' }}"
-                 role="{{ 'alert' if status == 'error' else 'status' }}">
-                <p>{{ message }}</p>
-                <a href="{{ url_for('index') }}">Dismiss</a>
+    {% if message %}
+    <div class="toast {{ 'toast-error' if status == 'error' else 'toast-ok' }}" id="toast"
+         role="{{ 'alert' if status == 'error' else 'status' }}">
+        <p>{{ message }}</p>
+        <button type="button" class="toast-x" aria-label="Dismiss message">&times;</button>
+    </div>
+    {% endif %}
+
+    <main class="wrap">
+        <!-- ================= Overview ================= -->
+        <section class="hero" id="overview" aria-labelledby="hero-title">
+            <div>
+                <h1 id="hero-title">EcoGrid</h1>
+                <p class="tag">Measure. Save. Earn.</p>
+                <p class="lead">Meter readings, monthly bills and conservation rankings for every resident on campus. Use less than the baseline and the points add up.</p>
+                <div class="cta-row">
+                    <a class="btn btn-primary" href="#energy">See energy use</a>
+                    <a class="btn btn-ghost" href="#meters">Record a reading</a>
+                </div>
             </div>
-            {% endif %}
 
-            <section aria-label="Campus summary">
-                <dl class="summary">
-                    <div>
-                        <dt>Residents</dt>
-                        <dd>{{ total_students }}</dd>
-                    </div>
-                    <div>
-                        <dt>Total usage</dt>
-                        <dd>{{ "{:,.1f}".format(total_kwh) }} <span class="unit">kWh</span></dd>
-                    </div>
-                    <div>
-                        <dt>Saved below baseline</dt>
-                        <dd>{{ "{:,.1f}".format(total_saved) }} <span class="unit">kWh</span></dd>
-                    </div>
-                    <div>
-                        <dt>Under baseline</dt>
-                        <dd>{{ eco_compliant_count }} <span class="unit">of {{ total_students }}</span></dd>
-                    </div>
-                    <div>
-                        <dt>Points awarded</dt>
-                        <dd>{{ "{:,}".format(total_points) }}</dd>
-                    </div>
-                </dl>
-            </section>
+            <div class="orb" id="orb" aria-hidden="true">
+                <div class="orb-tilt">
+                    <span class="ring r1"></span>
+                    <span class="ring r2"></span>
+                    <span class="ring r3"></span>
+                    <span class="core"></span>
+                </div>
+                <div class="orb-chip">
+                    <strong><span data-count="{{ total_saved }}" data-dec="1">{{ "{:,.1f}".format(total_saved) }}</span> kWh</strong>
+                    saved below baseline
+                </div>
+            </div>
+        </section>
 
-            <div class="layout">
-                <div class="side">
-                    <section class="panel" aria-labelledby="entry-title">
-                        <div class="panel-head">
-                            <h2 id="entry-title">Record a meter reading</h2>
+        <dl class="stats" aria-label="Campus summary">
+            <div class="stat">
+                <dt>Residents</dt>
+                <dd><span data-count="{{ total_students }}">{{ total_students }}</span></dd>
+            </div>
+            <div class="stat">
+                <dt>Total usage</dt>
+                <dd><span data-count="{{ total_kwh }}" data-dec="1">{{ "{:,.1f}".format(total_kwh) }}</span> <span class="unit">kWh</span></dd>
+            </div>
+            <div class="stat">
+                <dt>Saved below baseline</dt>
+                <dd><span data-count="{{ total_saved }}" data-dec="1">{{ "{:,.1f}".format(total_saved) }}</span> <span class="unit">kWh</span></dd>
+            </div>
+            <div class="stat">
+                <dt>Under baseline</dt>
+                <dd><span data-count="{{ eco_compliant_count }}">{{ eco_compliant_count }}</span> <span class="unit">of {{ total_students }}</span></dd>
+            </div>
+            <div class="stat">
+                <dt>Points awarded</dt>
+                <dd><span data-count="{{ total_points }}">{{ "{:,}".format(total_points) }}</span></dd>
+            </div>
+        </dl>
+
+        <section class="billing" aria-labelledby="billing-title">
+            <div>
+                <h2 id="billing-title">How a bill is worked out</h2>
+                <p>Every resident has a monthly baseline. Stay under it and you earn points; go over it and the bill climbs at a flat rate. Drag the slider to try a reading.</p>
+                <a class="btn btn-ghost" href="{{ url_for('all_bills') }}" target="_blank" rel="noopener">Print all bills</a>
+            </div>
+
+            <div class="term">
+                <div class="term-bar"><i></i><i></i><i></i><span>terminal ~ /bill_estimator</span></div>
+                <div class="term-body">
+                    <p><span class="prompt">$</span> ecogrid terms</p>
+                    <p><span class="k">baseline</span>{{ "%.0f"|format(baseline_kwh) }} kWh per month</p>
+                    <p><span class="k">rate</span>{{ currency_symbol }}{{ "%.2f"|format(rate_per_kwh) }} per kWh</p>
+                    <p><span class="k">reward</span>{{ points_per_kwh }} points per kWh saved</p>
+                    <div class="term-gap"></div>
+                    <p>
+                        <label for="est-num"><span class="prompt">$</span> estimate --kwh</label>
+                        <input class="term-input" id="est-num" type="number" min="0" max="{{ max_reading_kwh|int }}" step="1" value="85" inputmode="decimal">
+                        <span class="caret" aria-hidden="true"></span>
+                    </p>
+                    <input class="term-range" id="est-range" type="range" min="0" max="{{ (baseline_kwh * 2)|int }}" step="1" value="85" aria-label="Meter reading in kWh">
+                    <p><span class="k">bill</span><span class="est-val" id="est-bill">&nbsp;</span></p>
+                    <p><span class="k">points</span><span class="est-val" id="est-pts">&nbsp;</span> <span class="badge badge-saver" id="est-tier">&nbsp;</span></p>
+                    <div class="meter" aria-hidden="true"><div class="meter-fill" id="est-fill" style="width: 42%;"></div><div class="meter-mark"></div></div>
+                    <p class="hint" id="est-note" aria-live="polite">&nbsp;</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= Energy use ================= -->
+        <section class="section" id="energy" aria-labelledby="energy-title">
+            <h2 class="section-title" id="energy-title">Energy use</h2>
+            <p class="section-sub">Compare everyone against the {{ "%.0f"|format(baseline_kwh) }} kWh baseline, then open a resident to follow their usage month by month.</p>
+
+            {% if students %}
+            <div class="energy-grid">
+                <article class="panel" aria-labelledby="campus-title">
+                    <div class="panel-head">
+                        <div>
+                            <h3 id="campus-title">Campus comparison</h3>
+                            <p>Latest reading per resident. Click a bar to open them.</p>
                         </div>
+                        <div class="chips" role="group" aria-label="Chart measure">
+                            <button type="button" class="chip" data-campus="kwh" aria-pressed="true">Usage</button>
+                            <button type="button" class="chip" data-campus="bill" aria-pressed="false">Bill</button>
+                            <button type="button" class="chip" data-campus="points" aria-pressed="false">Points</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="chart-box"><canvas id="campus-chart" role="img" aria-label="Bar chart comparing each resident's latest meter reading"></canvas></div>
+                    </div>
+                </article>
 
-                        <form class="panel-body" action="{{ url_for('submit_reading') }}" method="post">
-                            <div class="field">
-                                <label for="student_id">Resident</label>
-                                <select id="student_id" name="student_id" required>
-                                    <option value="" disabled selected>Select a resident</option>
-                                    {% for student in dropdown_students %}
-                                    <option value="{{ student.id }}">
-                                        {{ student.room_number }} &ndash; {{ student.name }} ({{ "%.1f"|format(student.kwh_used) }} kWh)
-                                    </option>
+                <article class="panel" id="res-panel" aria-labelledby="res-name">
+                    <div class="panel-head">
+                        <div>
+                            <h3>Resident history</h3>
+                            <p>Month-by-month usage and bills.</p>
+                        </div>
+                        <div class="chips" role="group" aria-label="Chart measure">
+                            <button type="button" class="chip" data-res="kwh" aria-pressed="true">Usage</button>
+                            <button type="button" class="chip" data-res="bill" aria-pressed="false">Bill</button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="res-top">
+                            <div>
+                                <p class="res-name" id="res-name"></p>
+                                <span class="res-room" id="res-room"></span>
+                            </div>
+                            <div>
+                                <label class="visually-hidden" for="res-select">Choose a resident</label>
+                                <select id="res-select">
+                                    {% for s in dropdown_students %}
+                                    <option value="{{ s.id }}">{{ s.room_number }} &ndash; {{ s.name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-
-                            <div class="field">
-                                <label for="new_kwh_reading">Meter reading (kWh)</label>
-                                <input
-                                    type="number"
-                                    id="new_kwh_reading"
-                                    name="new_kwh_reading"
-                                    step="0.1"
-                                    min="0"
-                                    max="{{ max_reading_kwh }}"
-                                    inputmode="decimal"
-                                    autocomplete="off"
-                                    aria-describedby="reading-hint"
-                                    required
-                                >
-                                <p class="hint" id="reading-hint">
-                                    Replaces the resident&rsquo;s current reading and recalculates their bill and points.
-                                </p>
-                            </div>
-
-                            <button class="button" type="submit">Save reading</button>
-                        </form>
-
-                        <div class="terms">
-                            <h3>Billing terms</h3>
-                            <dl>
-                                <div>
-                                    <dt>Monthly baseline</dt>
-                                    <dd>{{ "%.0f"|format(baseline_kwh) }} kWh</dd>
-                                </div>
-                                <div>
-                                    <dt>Rate</dt>
-                                    <dd>{{ currency_symbol }}{{ "%.2f"|format(rate_per_kwh) }} per kWh</dd>
-                                </div>
-                                <div>
-                                    <dt>Points</dt>
-                                    <dd>{{ points_per_kwh }} per kWh below baseline</dd>
-                                </div>
-                            </dl>
-                        </div>
-                    </section>
-
-                    <section class="panel" aria-labelledby="add-title">
-                        <div class="panel-head">
-                            <h2 id="add-title">Add a resident</h2>
                         </div>
 
-                        <form class="panel-body" action="{{ url_for('add_student') }}" method="post">
-                            <div class="field">
-                                <label for="name">Name</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    maxlength="{{ max_name_length }}"
-                                    autocomplete="off"
-                                    required
-                                >
-                            </div>
+                        <dl class="tiles">
+                            <div class="tile"><dt>Latest</dt><dd id="rs-latest">&ndash;</dd></div>
+                            <div class="tile"><dt>Vs last month</dt><dd id="rs-change">&ndash;</dd></div>
+                            <div class="tile"><dt>Average</dt><dd id="rs-avg">&ndash;</dd></div>
+                            <div class="tile"><dt>Total saved</dt><dd id="rs-saved">&ndash;</dd></div>
+                        </dl>
 
-                            <div class="field">
-                                <label for="room_number">Room number</label>
-                                <input
-                                    type="text"
-                                    id="room_number"
-                                    name="room_number"
-                                    maxlength="{{ max_room_length }}"
-                                    placeholder="A-101"
-                                    autocomplete="off"
-                                    aria-describedby="room-hint"
-                                    required
-                                >
-                                <p class="hint" id="room-hint">Each room can have one resident.</p>
-                            </div>
+                        <div class="chart-box" style="height: 230px;"><canvas id="res-chart" role="img" aria-label="Bar chart of the selected resident's monthly usage"></canvas></div>
+                        <p class="res-note" id="res-note" aria-live="polite"></p>
 
-                            <div class="field">
-                                <label for="kwh_reading">Current meter reading (kWh)</label>
-                                <input
-                                    type="number"
-                                    id="kwh_reading"
-                                    name="kwh_reading"
-                                    step="0.1"
-                                    min="0"
-                                    max="{{ max_reading_kwh }}"
-                                    inputmode="decimal"
-                                    autocomplete="off"
-                                    aria-describedby="initial-hint"
-                                    required
-                                >
-                                <p class="hint" id="initial-hint">
-                                    Used to calculate the resident&rsquo;s first bill and points.
-                                </p>
-                            </div>
+                        <div class="res-actions">
+                            <a class="btn btn-primary btn-sm" id="res-bill" href="#" target="_blank" rel="noopener">Open bill (PDF)</a>
+                            <button type="button" class="btn btn-ghost btn-sm" id="res-record">Record a reading</button>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            {% else %}
+            <div class="panel"><p class="empty">No residents yet. Add one in the Meters section to see charts here.</p></div>
+            {% endif %}
+        </section>
 
-                            <button class="button" type="submit">Add resident</button>
-                        </form>
-                    </section>
+        <!-- ================= Leaderboard ================= -->
+        <section class="section" id="leaderboard" aria-labelledby="board-title">
+            <h2 class="section-title" id="board-title">Leaderboard</h2>
+            <p class="section-sub">Ranked by points, then lowest usage. The amber mark on each bar is the {{ "%.0f"|format(baseline_kwh) }} kWh baseline.</p>
+
+            {% if students %}
+            <div class="podium">
+                {% for s in students[:3] %}
+                <button type="button" class="pod" data-pick="{{ s.id }}">
+                    <span class="pod-rank">{{ s.rank }}</span>
+                    <span class="pod-name">{{ s.name }}</span>
+                    <span class="pod-room">Room {{ s.room_number }}</span>
+                    <span class="pod-pts"><strong>{{ s.reward_points }} pts</strong><span class="badge badge-{{ s.tier_slug }}">{{ s.eco_tier }}</span></span>
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="panel">
+                <div class="toolbar">
+                    <div class="search">
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="m14 14 4 4"/></svg>
+                        <label class="visually-hidden" for="search">Search residents</label>
+                        <input type="search" id="search" placeholder="Search name or room" autocomplete="off">
+                    </div>
+                    <div class="chips" role="group" aria-label="Filter by tier">
+                        <button type="button" class="chip" data-tier="all" aria-pressed="true">All</button>
+                        <button type="button" class="chip" data-tier="guardian" aria-pressed="false">Grid Guardian</button>
+                        <button type="button" class="chip" data-tier="warrior" aria-pressed="false">Eco-Warrior</button>
+                        <button type="button" class="chip" data-tier="saver" aria-pressed="false">Green Saver</button>
+                        <button type="button" class="chip" data-tier="over" aria-pressed="false">Over Baseline</button>
+                    </div>
+                    <span class="count" id="board-count" aria-live="polite">{{ students|length }} of {{ students|length }} residents</span>
                 </div>
 
-                <section class="panel" aria-labelledby="board-title">
-                    <div class="panel-head">
-                        <h2 id="board-title">Leaderboard</h2>
-                        <p>
-                            Ranked by points, then lowest usage. The mark on each bar is the
-                            {{ "%.0f"|format(baseline_kwh) }} kWh baseline.
-                        </p>
-                    </div>
+                <div class="table-wrap">
+                    <table>
+                        <caption class="visually-hidden">Residents ranked by reward points</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col" aria-sort="ascending"><button type="button" class="th-sort" data-sort="rank">Rank</button></th>
+                                <th scope="col" aria-sort="none"><button type="button" class="th-sort" data-sort="name">Resident</button></th>
+                                <th scope="col" aria-sort="none"><button type="button" class="th-sort" data-sort="kwh">Usage</button></th>
+                                <th scope="col" class="num" aria-sort="none"><button type="button" class="th-sort" data-sort="bill">Bill</button></th>
+                                <th scope="col" class="num" aria-sort="none"><button type="button" class="th-sort" data-sort="points">Points</button></th>
+                                <th scope="col">Tier</th>
+                                <th scope="col"><span class="visually-hidden">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="board-body">
+                            {% for s in students %}
+                            {% set bar_pct = [s.kwh_used / (baseline_kwh * 1.5) * 100, 100] | min %}
+                            <tr data-id="{{ s.id }}" data-rank="{{ s.rank }}" data-name="{{ s.name|lower }}"
+                                data-kwh="{{ s.kwh_used }}" data-bill="{{ s.total_bill }}" data-points="{{ s.reward_points }}"
+                                data-tier="{{ s.tier_slug }}" data-search="{{ (s.name ~ ' ' ~ s.room_number)|lower }}">
+                                <td class="rank">{{ s.rank }}</td>
+                                <th scope="row">
+                                    <button type="button" class="name-btn" data-pick="{{ s.id }}">{{ s.name }}</button>
+                                    <span class="room">Room {{ s.room_number }}</span>
+                                </th>
+                                <td>
+                                    <div class="usage-figures">
+                                        <span>{{ "%.1f"|format(s.kwh_used) }} kWh</span>
+                                        {% if s.kwh_used < baseline_kwh %}
+                                        <span class="delta under">{{ "%.1f"|format(s.kwh_saved) }} below</span>
+                                        {% elif s.kwh_used > baseline_kwh %}
+                                        <span class="delta over">{{ "%.1f"|format(s.kwh_used - baseline_kwh) }} over</span>
+                                        {% else %}
+                                        <span class="delta">At baseline</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="bar" aria-hidden="true">
+                                        <div class="bar-fill{{ ' over' if s.kwh_used > baseline_kwh else '' }}" style="--w: {{ '%.1f'|format(bar_pct) }}%;"></div>
+                                        <div class="bar-mark"></div>
+                                    </div>
+                                </td>
+                                <td class="num">{{ currency_symbol }}{{ "{:,.2f}".format(s.total_bill) }}</td>
+                                <td class="num">{{ s.reward_points }}</td>
+                                <td><span class="badge badge-{{ s.tier_slug }}">{{ s.eco_tier }}</span></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <button type="button" class="btn btn-ghost btn-sm" data-pick="{{ s.id }}" data-scroll="1" aria-label="Show chart for {{ s.name }}">Chart</button>
+                                        <a class="btn btn-ghost btn-sm" href="{{ url_for('bill', student_id=s.id) }}" target="_blank" rel="noopener" aria-label="Open bill for {{ s.name }}">Bill</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <p class="empty" id="board-empty" {% if students %}hidden{% endif %}>
+                        {% if students %}No residents match that search or filter.{% else %}No resident records to display.{% endif %}
+                    </p>
+                </div>
+            </div>
+        </section>
 
-                    <div class="table-wrap">
-                        <table>
-                            <caption class="visually-hidden">Residents ranked by reward points</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Rank</th>
-                                    <th scope="col">Resident</th>
-                                    <th scope="col">Usage</th>
-                                    <th scope="col" class="num">Bill</th>
-                                    <th scope="col" class="num">Points</th>
-                                    <th scope="col">Tier</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for student in students %}
-                                {% set bar_pct = [student.kwh_used / (baseline_kwh * 1.5) * 100, 100] | min %}
-                                <tr>
-                                    <td class="rank">{{ student.rank }}</td>
-                                    <th scope="row">
-                                        <span class="name">{{ student.name }}</span>
-                                        <span class="room">Room {{ student.room_number }}</span>
-                                    </th>
-                                    <td class="usage">
-                                        <div class="usage-figures">
-                                            <span>{{ "%.1f"|format(student.kwh_used) }} kWh</span>
-                                            {% if student.kwh_used < baseline_kwh %}
-                                            <span class="usage-delta under">{{ "%.1f"|format(student.kwh_saved) }} kWh below baseline</span>
-                                            {% elif student.kwh_used > baseline_kwh %}
-                                            <span class="usage-delta over">{{ "%.1f"|format(student.kwh_used - baseline_kwh) }} kWh over baseline</span>
-                                            {% else %}
-                                            <span class="usage-delta">At baseline</span>
-                                            {% endif %}
-                                        </div>
-                                        <div class="bar" aria-hidden="true">
-                                            <div class="bar-fill{{ ' over' if student.kwh_used > baseline_kwh else '' }}" style="width: {{ '%.1f'|format(bar_pct) }}%;"></div>
-                                            <div class="bar-mark"></div>
-                                        </div>
-                                    </td>
-                                    <td class="num">{{ currency_symbol }}{{ "{:,.2f}".format(student.total_bill) }}</td>
-                                    <td class="num">{{ student.reward_points }}</td>
-                                    <td class="tier">{{ student.eco_tier }}</td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="6" class="empty">No resident records to display.</td>
-                                </tr>
+        <!-- ================= Meters ================= -->
+        <section class="section" id="meters" aria-labelledby="meters-title">
+            <h2 class="section-title" id="meters-title">Meters</h2>
+            <p class="section-sub">Readings are saved against {{ current_month }}. Saving again this month replaces that month&rsquo;s reading; next month starts a new bar on the chart.</p>
+
+            <div class="forms">
+                <section class="panel" aria-labelledby="entry-title">
+                    <div class="panel-head"><h3 id="entry-title">Record a meter reading</h3></div>
+                    <form class="panel-body" action="{{ url_for('submit_reading') }}" method="post">
+                        <div class="field">
+                            <label for="student_id">Resident</label>
+                            <select id="student_id" name="student_id" required>
+                                <option value="" disabled selected>Select a resident</option>
+                                {% for s in dropdown_students %}
+                                <option value="{{ s.id }}">{{ s.room_number }} &ndash; {{ s.name }} ({{ "%.1f"|format(s.kwh_used) }} kWh)</option>
                                 {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="new_kwh_reading">Meter reading (kWh)</label>
+                            <input type="number" id="new_kwh_reading" name="new_kwh_reading" step="0.1" min="0" max="{{ max_reading_kwh }}" inputmode="decimal" autocomplete="off" required>
+                        </div>
+                        <output class="preview" id="read-preview" for="student_id new_kwh_reading" aria-live="polite">Pick a resident and enter a reading to preview the bill.</output>
+                        <button class="btn btn-primary btn-block" type="submit">Save reading</button>
+                    </form>
+                </section>
+
+                <section class="panel" aria-labelledby="add-title">
+                    <div class="panel-head"><h3 id="add-title">Add a resident</h3></div>
+                    <form class="panel-body" action="{{ url_for('add_student') }}" method="post">
+                        <div class="field">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" maxlength="{{ max_name_length }}" autocomplete="off" required>
+                        </div>
+                        <div class="field">
+                            <label for="room_number">Room number</label>
+                            <input type="text" id="room_number" name="room_number" maxlength="{{ max_room_length }}" placeholder="A-101" autocomplete="off" aria-describedby="room-hint" required>
+                            <p class="hint" id="room-hint">Each room can have one resident.</p>
+                        </div>
+                        <div class="field">
+                            <label for="kwh_reading">Current meter reading (kWh)</label>
+                            <input type="number" id="kwh_reading" name="kwh_reading" step="0.1" min="0" max="{{ max_reading_kwh }}" inputmode="decimal" autocomplete="off" required>
+                        </div>
+                        <output class="preview" id="add-preview" for="kwh_reading" aria-live="polite">Enter a reading to preview the first bill.</output>
+                        <button class="btn btn-primary btn-block" type="submit">Add resident</button>
+                    </form>
                 </section>
             </div>
-        </main>
-    </div>
+        </section>
+    </main>
+
+    <footer class="wrap site-foot">
+        EcoGrid &middot; {{ currency_symbol }}{{ "%.2f"|format(rate_per_kwh) }} per kWh &middot; {{ "%.0f"|format(baseline_kwh) }} kWh monthly baseline &middot; {{ points_per_kwh }} points per kWh saved
+    </footer>
+
+    <script>window.ECO = {{ chart_data|tojson }};</script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    {% raw %}
+    <script>
+    (() => {
+        'use strict';
+
+        const D = window.ECO;
+        const BASE = D.baseline, RATE = D.rate, PPK = D.pointsPerKwh, CUR = D.currency;
+        const S = D.students;
+        const $ = (sel, root = document) => root.querySelector(sel);
+        const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const COL = { under: '#3ddc97', over: '#ff6b5b', amber: '#ffc24d', violet: '#8b6cff' };
+
+        /* ---------- Formatting and billing maths (mirrors app.py) ---------- */
+        const inr = n => CUR + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const f1 = n => Number(n).toLocaleString('en-IN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        const pyRound = x => { const r = Math.round(x); return (Math.abs(x % 1) === 0.5 && r % 2 !== 0) ? r - 1 : r; };
+        const calc = kwh => {
+            const bill = Math.round(kwh * RATE * 100) / 100;
+            const saved = kwh < BASE ? Math.round((BASE - kwh) * 100) / 100 : 0;
+            return { bill, saved, pts: pyRound(saved * PPK) };
+        };
+        const tierFor = pts => D.tiers.find(t => pts >= t.min) || { name: 'Over Baseline', slug: 'over' };
+        const setBadge = (el, tier) => { el.textContent = tier.name; el.className = 'badge badge-' + tier.slug; };
+        const smooth = el => el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+
+        /* ---------- Toast ---------- */
+        const toast = $('#toast');
+        if (toast) {
+            const close = () => { toast.classList.add('out'); setTimeout(() => toast.remove(), 300); };
+            $('.toast-x', toast).addEventListener('click', close);
+            if (toast.classList.contains('toast-ok')) setTimeout(close, 7000);
+            history.replaceState(null, '', location.pathname + location.hash);
+        }
+
+        /* ---------- Count-up numbers ---------- */
+        const countUp = el => {
+            if (reduce) return;
+            const end = parseFloat(el.dataset.count), dec = +el.dataset.dec || 0, t0 = performance.now(), dur = 1300;
+            const step = t => {
+                const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+                el.textContent = (end * e).toLocaleString('en-IN', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+                if (p < 1) requestAnimationFrame(step);
+            };
+            step(t0);
+        };
+        const countObserver = new IntersectionObserver(entries => entries.forEach(e => {
+            if (e.isIntersecting) { countUp(e.target); countObserver.unobserve(e.target); }
+        }), { threshold: 0.5 });
+        $$('[data-count]').forEach(el => countObserver.observe(el));
+
+        /* ---------- Orb follows the pointer ---------- */
+        const hero = $('#overview'), tilt = $('.orb-tilt');
+        if (!reduce && hero && tilt) {
+            let raf;
+            hero.addEventListener('pointermove', e => {
+                const r = hero.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+                cancelAnimationFrame(raf);
+                raf = requestAnimationFrame(() => {
+                    tilt.style.setProperty('--rx', (-y * 22) + 'deg');
+                    tilt.style.setProperty('--ry', (x * 28) + 'deg');
+                });
+            });
+            hero.addEventListener('pointerleave', () => {
+                tilt.style.setProperty('--rx', '0deg');
+                tilt.style.setProperty('--ry', '0deg');
+            });
+        }
+
+        /* ---------- Nav highlight ---------- */
+        const links = $$('.nav-links a');
+        const spy = new IntersectionObserver(entries => entries.forEach(e => {
+            if (e.isIntersecting) links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+        }), { rootMargin: '-45% 0px -50% 0px' });
+        links.forEach(l => { const s = $(l.getAttribute('href')); if (s) spy.observe(s); });
+
+        /* ---------- Bill estimator ---------- */
+        const eNum = $('#est-num'), eRange = $('#est-range'), eFill = $('#est-fill');
+        const estimate = raw => {
+            const v = Math.max(0, Math.min(D.maxReading, parseFloat(raw) || 0));
+            const c = calc(v), tier = tierFor(c.pts);
+            $('#est-bill').textContent = inr(c.bill);
+            $('#est-pts').textContent = c.pts;
+            setBadge($('#est-tier'), tier);
+            eFill.style.width = Math.min(100, v / (BASE * 2) * 100) + '%';
+            eFill.classList.toggle('over', v > BASE);
+            $('#est-note').textContent = v < BASE ? f1(BASE - v) + ' kWh below baseline'
+                : v > BASE ? f1(v - BASE) + ' kWh over baseline, no points' : 'Exactly at baseline';
+        };
+        eRange.addEventListener('input', () => { eNum.value = eRange.value; estimate(eRange.value); });
+        eNum.addEventListener('input', () => { eRange.value = Math.min(+eRange.max, eNum.value || 0); estimate(eNum.value); });
+        estimate(eNum.value);
+
+        /* ---------- Charts ---------- */
+        const state = { id: D.selected, campus: 'kwh', res: 'kwh' };
+        const current = () => S.find(s => s.id === state.id) || S[0];
+        let campusChart = null, resChart = null;
+
+        const baselinePlugin = {
+            id: 'baseline',
+            afterDatasetsDraw(chart, _args, opts) {
+                if (!opts || !opts.value) return;
+                const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+                const py = y.getPixelForValue(opts.value);
+                ctx.save();
+                ctx.setLineDash([6, 5]);
+                ctx.strokeStyle = COL.amber;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(right, py); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = COL.amber;
+                ctx.font = '600 11px "DM Sans", sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(opts.label, right - 4, py - 6);
+                ctx.restore();
+            }
+        };
+
+        const baseOptions = () => ({
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: reduce ? false : { duration: 600 },
+            plugins: { legend: { display: false }, baseline: { value: 0, label: '' } },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#a3a9bf' } },
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#a3a9bf' }, border: { display: false } }
+            }
+        });
+
+        const campusMeta = {
+            kwh:    { get: s => s.kwh,    unit: 'kWh', tick: v => v },
+            bill:   { get: s => s.bill,   unit: CUR,   tick: v => CUR + v },
+            points: { get: s => s.points, unit: 'pts', tick: v => v }
+        };
+
+        function drawCampus() {
+            const m = campusMeta[state.campus];
+            campusChart.data.datasets[0].data = S.map(m.get);
+            const o = campusChart.options;
+            o.scales.y.ticks.callback = m.tick;
+            o.scales.y.suggestedMax = state.campus === 'kwh' ? BASE * 1.25 : undefined;
+            o.plugins.baseline = state.campus === 'kwh' ? { value: BASE, label: 'Baseline ' + BASE + ' kWh' } : { value: 0, label: '' };
+            campusChart.update();
+        }
+
+        function drawResident() {
+            const s = current(), h = s.history, kwhMode = state.res === 'kwh';
+            const last = h.length - 1;
+            resChart.data.labels = h.map(x => x.label);
+            resChart.data.datasets[0].data = h.map(x => kwhMode ? x.kwh : x.bill);
+            resChart.data.datasets[0].backgroundColor = h.map((x, i) => (x.kwh > BASE ? COL.over : COL.under) + (i === last ? '' : '8c'));
+            const o = resChart.options;
+            o.scales.y.ticks.callback = kwhMode ? (v => v) : (v => CUR + v);
+            o.scales.y.suggestedMax = (kwhMode ? BASE : BASE * RATE) * 1.25;
+            o.plugins.baseline = kwhMode ? { value: BASE, label: 'Baseline ' + BASE + ' kWh' } : { value: BASE * RATE, label: 'Baseline ' + inr(BASE * RATE) };
+            resChart.update();
+
+            $('#res-name').textContent = s.name;
+            $('#res-room').textContent = 'Room ' + s.room;
+            $('#res-bill').href = D.billUrl + s.id;
+            $('#rs-latest').textContent = f1(s.kwh) + ' kWh';
+
+            const change = $('#rs-change');
+            change.className = '';
+            if (h.length > 1) {
+                const d = h[last].kwh - h[last - 1].kwh;
+                change.textContent = d === 0 ? 'No change' : (d > 0 ? '+' : '\u2212') + f1(Math.abs(d)) + ' kWh';
+                change.className = d > 0 ? 'bad' : d < 0 ? 'good' : '';
+            } else {
+                change.textContent = '\u2013';
+            }
+            $('#rs-avg').textContent = f1(h.reduce((a, x) => a + x.kwh, 0) / h.length) + ' kWh';
+            $('#rs-saved').textContent = f1(h.reduce((a, x) => a + Math.max(0, BASE - x.kwh), 0)) + ' kWh';
+            $('#res-note').textContent = h.length < 2
+                ? 'Only one month recorded so far. Save a reading each month to build the trend.'
+                : 'Last ' + h.length + ' months. Solid bar is the latest; dashed line is the baseline.';
+        }
+
+        function selectResident(id, scroll) {
+            state.id = id;
+            $('#res-select').value = id;
+            if (resChart) { drawResident(); campusChart.update('none'); }
+            $$('#board-body tr').forEach(tr => tr.classList.toggle('is-selected', +tr.dataset.id === id));
+            if (scroll) smooth($('#res-panel'));
+        }
+
+        function initCharts() {
+            if (!S.length) return;
+            if (typeof Chart === 'undefined') {
+                $$('.chart-box').forEach(b => { b.innerHTML = '<p class="chart-fallback">Charts could not load. Check your internet connection and refresh. Everything else still works.</p>'; });
+                return;
+            }
+            Chart.defaults.color = '#a3a9bf';
+            Chart.defaults.font.family = '"DM Sans", system-ui, sans-serif';
+            Chart.register(baselinePlugin);
+
+            const tipBase = {
+                backgroundColor: '#12141f', borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1,
+                titleColor: '#eef0f7', bodyColor: '#a3a9bf', padding: 12, displayColors: false
+            };
+
+            const copt = baseOptions();
+            copt.plugins.tooltip = {
+                ...tipBase,
+                callbacks: {
+                    title: items => S[items[0].dataIndex].name + ' \u00b7 ' + S[items[0].dataIndex].room,
+                    label: item => { const s = S[item.dataIndex]; return [f1(s.kwh) + ' kWh', inr(s.bill), s.points + ' points']; }
+                }
+            };
+            copt.onClick = (_e, els) => { if (els.length) selectResident(S[els[0].index].id, true); };
+            copt.onHover = (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; };
+            campusChart = new Chart($('#campus-chart'), {
+                type: 'bar',
+                data: {
+                    labels: S.map(s => s.name.split(' ')[0]),
+                    datasets: [{
+                        data: [], borderRadius: 8, maxBarThickness: 52,
+                        backgroundColor: ctx => {
+                            const s = S[ctx.dataIndex];
+                            return (s.kwh > BASE ? COL.over : COL.under) + (s.id === state.id ? '' : '80');
+                        }
+                    }]
+                },
+                options: copt
+            });
+
+            const ropt = baseOptions();
+            ropt.plugins.tooltip = {
+                ...tipBase,
+                callbacks: {
+                    title: items => items[0].label,
+                    label: item => { const x = current().history[item.dataIndex]; return [f1(x.kwh) + ' kWh', inr(x.bill), x.points + ' points']; }
+                }
+            };
+            resChart = new Chart($('#res-chart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [{ data: [], borderRadius: 8, maxBarThickness: 56, backgroundColor: [] }] },
+                options: ropt
+            });
+
+            drawCampus();
+            selectResident(state.id, false);
+        }
+
+        /* Resident dropdown, chips and shortcuts */
+        const resSelect = $('#res-select');
+        if (resSelect && S.length) {
+            resSelect.value = state.id;
+            resSelect.addEventListener('change', () => selectResident(+resSelect.value, false));
+            $$('[data-campus]').forEach(b => b.addEventListener('click', () => {
+                state.campus = b.dataset.campus;
+                $$('[data-campus]').forEach(x => x.setAttribute('aria-pressed', x === b));
+                if (campusChart) drawCampus();
+            }));
+            $$('[data-res]').forEach(b => b.addEventListener('click', () => {
+                state.res = b.dataset.res;
+                $$('[data-res]').forEach(x => x.setAttribute('aria-pressed', x === b));
+                if (resChart) drawResident();
+            }));
+            $('#res-record').addEventListener('click', () => {
+                $('#student_id').value = state.id;
+                readPreview();
+                smooth($('#meters'));
+                setTimeout(() => $('#new_kwh_reading').focus({ preventScroll: true }), reduce ? 0 : 500);
+            });
+        }
+        $$('[data-pick]').forEach(b => b.addEventListener('click', () => selectResident(+b.dataset.pick, true)));
+        initCharts();
+
+        /* ---------- Leaderboard: search, filter, sort ---------- */
+        const body = $('#board-body'), rows = $$('tr[data-id]', body);
+        const filt = { q: '', tier: 'all' };
+        const applyFilter = () => {
+            let shown = 0;
+            rows.forEach(r => {
+                const ok = (filt.tier === 'all' || r.dataset.tier === filt.tier) && (!filt.q || r.dataset.search.includes(filt.q));
+                r.hidden = !ok;
+                if (ok) shown++;
+            });
+            $('#board-empty').hidden = shown !== 0 || rows.length === 0;
+            $('#board-count').textContent = shown + ' of ' + rows.length + ' residents';
+        };
+        $('#search').addEventListener('input', e => { filt.q = e.target.value.trim().toLowerCase(); applyFilter(); });
+        $$('[data-tier]').forEach(b => b.addEventListener('click', () => {
+            filt.tier = b.dataset.tier;
+            $$('[data-tier]').forEach(x => x.setAttribute('aria-pressed', x === b));
+            applyFilter();
+        }));
+
+        let sortKey = 'rank', sortDir = 1;
+        $$('.th-sort').forEach(btn => btn.addEventListener('click', () => {
+            const key = btn.dataset.sort;
+            sortDir = key === sortKey ? -sortDir : (key === 'points' ? -1 : 1);
+            sortKey = key;
+            const val = r => key === 'name' ? r.dataset.name : +r.dataset[key];
+            rows.sort((a, b) => {
+                const x = val(a), y = val(b);
+                const c = typeof x === 'string' ? x.localeCompare(y) : x - y;
+                return (c || (+a.dataset.rank - +b.dataset.rank)) * sortDir;
+            }).forEach(r => body.appendChild(r));
+            $$('thead th').forEach(th => th.setAttribute('aria-sort', 'none'));
+            btn.closest('th').setAttribute('aria-sort', sortDir === 1 ? 'ascending' : 'descending');
+        }));
+        applyFilter();
+
+        /* ---------- Form previews ---------- */
+        const rSel = $('#student_id'), rIn = $('#new_kwh_reading'), rOut = $('#read-preview');
+        function readPreview() {
+            const s = S.find(x => String(x.id) === rSel.value), v = parseFloat(rIn.value);
+            if (!s || isNaN(v)) { rOut.textContent = 'Pick a resident and enter a reading to preview the bill.'; return; }
+            const r = Math.round(v * 100) / 100, c = calc(r), d = r - s.kwh;
+            rOut.innerHTML = 'New bill <strong>' + inr(c.bill) + '</strong>, <strong>' + c.pts + '</strong> points, ' + tierFor(c.pts).name + '. '
+                + (d === 0 ? 'Same as the current reading.' : (d > 0 ? '+' : '\u2212') + f1(Math.abs(d)) + ' kWh vs current.');
+        }
+        rSel.addEventListener('change', readPreview);
+        rIn.addEventListener('input', readPreview);
+
+        const aRoom = $('#room_number'), aKwh = $('#kwh_reading'), aOut = $('#add-preview'), aHint = $('#room-hint');
+        aRoom.addEventListener('input', () => {
+            const room = aRoom.value.trim().toUpperCase();
+            const clash = room && S.some(s => s.room.toUpperCase() === room);
+            aRoom.setCustomValidity(clash ? 'This room already has a resident.' : '');
+            aHint.textContent = clash ? 'Room ' + room + ' already has a resident.' : 'Each room can have one resident.';
+            aHint.classList.toggle('warn', !!clash);
+        });
+        aKwh.addEventListener('input', () => {
+            const v = parseFloat(aKwh.value);
+            if (isNaN(v)) { aOut.textContent = 'Enter a reading to preview the first bill.'; return; }
+            const c = calc(Math.round(v * 100) / 100);
+            aOut.innerHTML = 'First bill <strong>' + inr(c.bill) + '</strong>, <strong>' + c.pts + '</strong> points, ' + tierFor(c.pts).name + '.';
+        });
+    })();
+    </script>
+    {% endraw %}
 </body>
 </html>
